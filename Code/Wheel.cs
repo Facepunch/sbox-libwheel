@@ -90,6 +90,11 @@ public sealed class Wheel : Component
 		return -friction.Evaluate( MathF.Abs( slip ) ) * MathF.Sign( slip ) * direction;
 	}
 
+	public Vector3 GetCenter()
+	{
+		return _groundTrace.EndPosition + Vector3.Up * WheelRadius;
+	}
+
 	private void UpdateSuspension()
 	{
 		if ( !IsGrounded )
