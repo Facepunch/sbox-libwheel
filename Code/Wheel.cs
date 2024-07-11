@@ -17,20 +17,25 @@ public sealed class Wheel : Component
 
 	public bool IsGrounded => _groundTrace.Hit;
 
-	private const float _lowSpeedThreshold = 20.0f;
+	private const float LowSpeedThreshold = 20.0f;
 
 	private SceneTraceResult _groundTrace;
 	private Rigidbody _rigidbody;
 	private float _motorTorque;
+	private float _suspensionTotalLength;
 
 	protected override void OnEnabled()
 	{
 		_rigidbody = Components.GetInAncestorsOrSelf<Rigidbody>();
+		_suspensionTotalLength = (MaxSuspensionLength + WheelRadius) - MinSuspensionLength;
 	}
 
 	protected override void OnFixedUpdate()
 	{
 		if ( Scene.IsEditor )
+			return;
+
+		if ( !_rigidbody.IsValid() )
 			return;
 
 		DoTrace();
@@ -41,59 +46,64 @@ public sealed class Wheel : Component
 
 	public void ApplyMotorTorque( float value )
 	{
-		_motorTorque = _motorTorque.LerpTo( value, 1f * Time.Delta );
+		var lerpFactor = 1f * Time.Delta;
+		_motorTorque = _motorTorque.LerpTo( value, lerpFactor );
 	}
 
 	private void UpdateWheelForces()
 	{
-		if ( IsGrounded )
+		if ( !IsGrounded )
+			return;
+
+		var forwardDir = Transform.Rotation.Forward;
+		var sideDir = Transform.Rotation.Right;
+		var wheelVelocity = _rigidbody.GetVelocityAtPoint( Transform.Position );
+		var wheelSpeed = wheelVelocity.Length;
+
+		var sideForce = Vector3.Zero;
+		var forwardForce = Vector3.Zero;
+
+		if ( wheelSpeed > LowSpeedThreshold )
 		{
-			var forwardDir = Transform.Rotation.Forward;
-			var sideDir = Transform.Rotation.Right;
-			var wheelVelocity = _rigidbody.GetVelocityAtPoint( Transform.Position );
+			float sideSlip = CalculateSlip( wheelVelocity, sideDir, wheelSpeed );
+			float forwardSlip = CalculateSlip( wheelVelocity, forwardDir, wheelSpeed );
 
-			var side = Vector3.Zero;
-			var forward = Vector3.Zero;
-
-			//
-			// We use a low speed threshold to avoid jittering when the car is stopped.
-			//
-			if ( wheelVelocity.Length > _lowSpeedThreshold )
-			{
-				// Simple friction model
-				var sideSlip = Vector3.Dot( wheelVelocity, sideDir ) / (wheelVelocity.Length + 0.01f);
-				var forwardSlip = Vector3.Dot( wheelVelocity, forwardDir ) / (wheelVelocity.Length + 0.01f);
-
-				side = -SideFriction.Evaluate( MathF.Abs( sideSlip ) ) * MathF.Sign( sideSlip ) * sideDir;
-				forward = -ForwardFriction.Evaluate( MathF.Abs( forwardSlip ) ) * MathF.Sign( forwardSlip ) * forwardDir;
-			}
-
-			var targetAccel = (side + forward);
-			targetAccel += _motorTorque * Transform.Rotation.Forward;
-			_rigidbody.ApplyForceAt( GameObject.Transform.Position, targetAccel / Time.Delta );
+			sideForce = CalculateFrictionForce( SideFriction, sideSlip, sideDir );
+			forwardForce = CalculateFrictionForce( ForwardFriction, forwardSlip, forwardDir );
 		}
+
+		var targetAcceleration = (sideForce + forwardForce);
+		targetAcceleration += _motorTorque * Transform.Rotation.Forward;
+
+		var force = targetAcceleration / Time.Delta;
+		_rigidbody.ApplyForceAt( GameObject.Transform.Position, force );
+	}
+
+	private float CalculateSlip( Vector3 velocity, Vector3 direction, float speed )
+	{
+		var epsilon = 0.01f; // to avoid division by zero
+		return Vector3.Dot( velocity, direction ) / (speed + epsilon);
+	}
+
+	private Vector3 CalculateFrictionForce( WheelFrictionInfo friction, float slip, Vector3 direction )
+	{
+		return -friction.Evaluate( MathF.Abs( slip ) ) * MathF.Sign( slip ) * direction;
 	}
 
 	private void UpdateSuspension()
 	{
-		var tx = Transform;
+		if ( !IsGrounded )
+			return;
 
-		var suspensionLength = _groundTrace.Distance;
+		var worldVelocity = _rigidbody.GetVelocityAtPoint( Transform.Position );
+		var suspensionCompression = _groundTrace.Distance - _suspensionTotalLength;
 
-		//
-		// If the point is touching any surface then we want it to
-		// 'push' the car up at the point based on Hooke's law.
-		//
-		if ( IsGrounded )
-		{
-			var worldVelocity = _rigidbody.GetVelocityAtPoint( Transform.Position );
+		var dampingForce = -SuspensionDamping * worldVelocity.z;
+		var springForce = -SuspensionStiffness * suspensionCompression;
+		var totalForce = (dampingForce + springForce) / Time.Delta;
 
-			var suspensionTotalLength = (MaxSuspensionLength + WheelRadius) - MinSuspensionLength;
-			var magnitude = -SuspensionDamping * worldVelocity.z - SuspensionStiffness * (suspensionLength - suspensionTotalLength);
-			var force = new Vector3( 0, 0, magnitude ) / Time.Delta;
-
-			_rigidbody.ApplyForceAt( tx.Position, force );
-		}
+		var suspensionForce = new Vector3( 0, 0, totalForce );
+		_rigidbody.ApplyForceAt( Transform.Position, suspensionForce );
 	}
 
 	private void DoTrace()
@@ -102,10 +112,10 @@ public sealed class Wheel : Component
 		var endPos = startPos + Transform.Rotation.Down * (MaxSuspensionLength + WheelRadius);
 
 		_groundTrace = Scene.Trace
-			.Radius( 1f )
-			.IgnoreGameObjectHierarchy( GameObject )
-			.WithoutTags( "car" )
-			.FromTo( startPos, endPos )
-			.Run();
+				.Radius( 1f )
+				.IgnoreGameObjectHierarchy( GameObject )
+				.WithoutTags( "car" )
+				.FromTo( startPos, endPos )
+				.Run();
 	}
 }
