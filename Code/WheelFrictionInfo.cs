@@ -2,20 +2,24 @@
 
 public struct WheelFrictionInfo
 {
-	public float ExtremumSlip { get; set; } = 1f;
-	public float ExtremumValue { get; set; } = 1f;
-	public float AsymptoteSlip { get; set; } = 2f;
-	public float AsymptoteValue { get; set; } = 0.5f;
-	public float Stiffness { get; set; } = 1f;
+	public float ExtremumSlip { get; set; }
+	public float ExtremumValue { get; set; }
+	public float AsymptoteSlip { get; set; }
+	public float AsymptoteValue { get; set; }
+	public float Stiffness { get; set; }
 
 	public WheelFrictionInfo()
 	{
-
+		ExtremumSlip = 1.0f;
+		ExtremumValue = 1.0f;
+		AsymptoteSlip = 2.0f;
+		AsymptoteValue = 0.5f;
+		Stiffness = 1.0f;
 	}
 
 	public float Evaluate( float slip )
 	{
-		float value;
+		var value = 0.0f;
 
 		if ( slip <= ExtremumSlip )
 		{

@@ -1,7 +1,7 @@
 using Sandbox;
 using System;
 
-[Category( "Racing Game" )]
+[Category( "Vehicles" )]
 [Title( "Wheel" )]
 [Icon( "sync" )]
 public sealed class Wheel : Component
@@ -34,8 +34,8 @@ public sealed class Wheel : Component
 
 		DoTrace();
 
-		UpdateSuspensionFromTrace();
-		UpdateSteeringFromTrace();
+		UpdateSuspension();
+		UpdateWheelForces();
 	}
 
 	public void ApplyMotorTorque( float value )
@@ -43,7 +43,7 @@ public sealed class Wheel : Component
 		_motorTorque = _motorTorque.LerpTo( value, 1f * Time.Delta );
 	}
 
-	private void UpdateSteeringFromTrace()
+	private void UpdateWheelForces()
 	{
 		if ( IsGrounded )
 		{
@@ -54,8 +54,12 @@ public sealed class Wheel : Component
 			var side = Vector3.Zero;
 			var forward = Vector3.Zero;
 
+			//
+			// We use a low speed threshold to avoid jittering when the car is stopped.
+			//
 			if ( wheelVelocity.Length > _lowSpeedThreshold )
 			{
+				// Simple friction model
 				var sideSlip = Vector3.Dot( wheelVelocity, sideDir ) / (wheelVelocity.Length + 0.01f);
 				var forwardSlip = Vector3.Dot( wheelVelocity, forwardDir ) / (wheelVelocity.Length + 0.01f);
 
@@ -69,7 +73,7 @@ public sealed class Wheel : Component
 		}
 	}
 
-	private void UpdateSuspensionFromTrace()
+	private void UpdateSuspension()
 	{
 		var tx = Transform;
 
