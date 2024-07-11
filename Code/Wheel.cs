@@ -10,6 +10,7 @@ public sealed class Wheel : Component
 	[Property] public float MaxSuspensionLength { get; set; } = 8f;
 	[Property] public float SuspensionStiffness { get; set; } = 3000.0f;
 	[Property] public float SuspensionDamping { get; set; } = 140.0f;
+	[Property] public float WheelRadius { get; set; } = 14.0f;
 
 	[Property] public WheelFrictionInfo ForwardFriction { get; set; }
 	[Property] public WheelFrictionInfo SideFriction { get; set; }
@@ -87,7 +88,7 @@ public sealed class Wheel : Component
 		{
 			var worldVelocity = _rigidbody.GetVelocityAtPoint( Transform.Position );
 
-			var suspensionTotalLength = MaxSuspensionLength - MinSuspensionLength;
+			var suspensionTotalLength = (MaxSuspensionLength + WheelRadius) - MinSuspensionLength;
 			var magnitude = -SuspensionDamping * worldVelocity.z - SuspensionStiffness * (suspensionLength - suspensionTotalLength);
 			var force = new Vector3( 0, 0, magnitude ) / Time.Delta;
 
@@ -98,7 +99,7 @@ public sealed class Wheel : Component
 	private void DoTrace()
 	{
 		var startPos = Transform.Position + Transform.Rotation.Down * MinSuspensionLength;
-		var endPos = startPos + Transform.Rotation.Down * MaxSuspensionLength;
+		var endPos = startPos + Transform.Rotation.Down * (MaxSuspensionLength + WheelRadius);
 
 		_groundTrace = Scene.Trace
 			.Radius( 1f )
