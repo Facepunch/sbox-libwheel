@@ -46,8 +46,7 @@ public sealed class Wheel : Component
 
 	public void ApplyMotorTorque( float value )
 	{
-		var lerpFactor = 1f * Time.Delta;
-		_motorTorque = _motorTorque.LerpTo( value, lerpFactor );
+		_motorTorque = value;
 	}
 
 	private void UpdateWheelForces()
