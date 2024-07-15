@@ -92,7 +92,9 @@ public sealed class Wheel : Component
 
 	public Vector3 GetCenter()
 	{
-		return _groundTrace.EndPosition + Vector3.Up * WheelRadius;
+		var up = _rigidbody.Transform.Rotation.Up;
+
+		return _groundTrace.EndPosition + up * WheelRadius;
 	}
 
 	private void UpdateSuspension()
@@ -113,8 +115,10 @@ public sealed class Wheel : Component
 
 	private void DoTrace()
 	{
-		var startPos = Transform.Position + Transform.Rotation.Down * MinSuspensionLength;
-		var endPos = startPos + Transform.Rotation.Down * (MaxSuspensionLength + WheelRadius);
+		var down = _rigidbody.Transform.Rotation.Down;
+
+		var startPos = Transform.Position + down * MinSuspensionLength;
+		var endPos = startPos + down * (MaxSuspensionLength + WheelRadius);
 
 		_groundTrace = Scene.Trace
 				.Radius( 1f )
