@@ -11,9 +11,9 @@ public struct WheelFrictionInfo
 	public WheelFrictionInfo()
 	{
 		ExtremumSlip = 1.0f;
-		ExtremumValue = 1.0f;
+		ExtremumValue = 20000.0f;
 		AsymptoteSlip = 2.0f;
-		AsymptoteValue = 0.5f;
+		AsymptoteValue = 10000.0f;
 		Stiffness = 1.0f;
 	}
 
