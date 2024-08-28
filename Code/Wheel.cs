@@ -126,4 +126,52 @@ public sealed class Wheel : Component
 				.FromTo( startPos, endPos )
 				.Run();
 	}
+
+	protected override void DrawGizmos()
+	{
+		if ( !Gizmo.IsSelected )
+			return;
+
+		Gizmo.Draw.IgnoreDepth = true;
+
+		//
+		// Suspension length
+		//
+		{
+			var suspensionStart = Vector3.Zero - Vector3.Down * MinSuspensionLength;
+			var suspensionEnd = Vector3.Zero + Vector3.Down * MaxSuspensionLength;
+
+			Gizmo.Draw.Color = Color.Cyan;
+			Gizmo.Draw.LineThickness = 0.25f;
+
+			Gizmo.Draw.Line( suspensionStart, suspensionEnd );
+
+			Gizmo.Draw.Line( suspensionStart + Vector3.Forward, suspensionStart + Vector3.Backward );
+			Gizmo.Draw.Line( suspensionEnd + Vector3.Forward, suspensionEnd + Vector3.Backward );
+		}
+
+		//
+		// Wheel radius
+		//
+		{
+
+			var circleAxis = Vector3.Right;
+			var circlePosition = Vector3.Zero;
+
+			Gizmo.Draw.LineThickness = 1.0f;
+			Gizmo.Draw.Color = Color.White;
+			Gizmo.Draw.LineCircle( circlePosition, circleAxis, WheelRadius );
+		}
+
+		//
+		// Forward direction
+		//
+		{
+			var arrowStart = Vector3.Forward * WheelRadius;
+			var arrowEnd = arrowStart + Vector3.Forward * 8f;
+
+			Gizmo.Draw.Color = Color.Red;
+			Gizmo.Draw.Arrow( arrowStart, arrowEnd, 4, 1 );
+		}
+	}
 }
