@@ -102,9 +102,12 @@ public sealed class Wheel : Component
 			return;
 
 		var worldVelocity = _rigidbody.GetVelocityAtPoint( Transform.Position );
+		Vector3 suspensionDir = WorldTransform.Up;
+
 		var suspensionCompression = _groundTrace.Distance - _suspensionTotalLength;
 
-		var dampingForce = -SuspensionDamping * worldVelocity.z;
+		float velocityAlongSuspension = Vector3.Dot(worldVelocity, suspensionDir);
+		var dampingForce = -SuspensionDamping * velocityAlongSuspension;
 		var springForce = -SuspensionStiffness * suspensionCompression;
 		var totalForce = (dampingForce + springForce) / Time.Delta;
 
